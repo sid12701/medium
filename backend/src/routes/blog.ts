@@ -14,18 +14,18 @@ export const blogRouter = new Hono<{
 }>();
 
 blogRouter.use("/*", async (c, next) => {
-  const headerAuth = c.req.header("Authorization");
-  if (!headerAuth) {
-    return c.json({ error: "Unauthorized" }, 401);
-  }
+  const headerAuth = c.req.header("authorization") || "";
   const token = headerAuth.split(" ")[1];
-  const payload = (await verify(token, c.env.JWT_SECRET)) || "";
-  if (!payload) {
-    return c.json({ error: "Unauthorized" }, 401);
+  const user = await verify(token, c.env.JWT_SECRET);
+  if(user){
+    //@ts-ignore
+    c.set("userId", user.id);
+    return next();
   }
-  console.log(payload);
-  //@ts-ignore
-  c.set("userId", payload.id);
+  else{
+    c.status(403)
+    return c.json({error: "Unauthorized"})
+  }
   await next();
 });
 
